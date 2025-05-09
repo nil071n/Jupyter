@@ -2,7 +2,7 @@
 echo Creating Python script...
 
 :: Create the Python script as a .py file
-> galaxy_script.py (
+(
 echo import pygame
 echo import math
 echo import random
@@ -96,9 +96,17 @@ echo pygame.display.flip()
 echo clock.tick(FPS)  ^# Control the frame rate
 echo.
 echo pygame.quit()
+) > galaxy_script.py
+
+:: Check if Python is installed and available in PATH
+where python >nul 2>nul
+if %errorlevel% neq 0 (
+    echo Python is not installed or not available in your PATH.
+    pause
+    exit /b
 )
 
-:: Run the Python script (you need to have Python installed and in your PATH)
+:: Run the Python script (assuming python is in the PATH)
 echo Running the Python script...
 python galaxy_script.py
 
