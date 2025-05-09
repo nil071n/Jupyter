@@ -1,7 +1,7 @@
 @echo off
 echo Creating Python script...
 
-> galaxy_script.txt (
+> galaxy_script.py (
 echo import pygame
 echo import math
 echo import random
