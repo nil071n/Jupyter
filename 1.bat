@@ -1,6 +1,7 @@
 @echo off
 echo Creating Python script...
 
+:: Create the Python script as a .py file
 > galaxy_script.py (
 echo import pygame
 echo import math
@@ -63,4 +64,43 @@ echo ^    screen.fill((0, 0, 0))  ^# Fill background with black
 echo.
 echo ^    for event in pygame.event.get():
 echo ^        if event.type == pygame.QUIT:
-echo
+echo ^            running = False
+echo.
+echo ^    # Update and draw particles with 3D rotation
+echo ^    for p in particles:
+echo ^        # Update the angle for 3D rotation (rotate around y-axis)
+echo ^        p["angle"] += p["speed"]
+echo ^        p["z"] -= 1  ^# Move the particle forward in 3D space
+echo ^        if p["z"] < 1:  ^# Reset the particle to the back once it's too close
+echo ^            p["z"] = MAX_Z
+echo.
+echo ^        # 3D to 2D conversion (for the visual effect)
+echo ^        x = p["radius"] * math.cos(p["angle"])
+echo ^        y = p["radius"] * math.sin(p["angle"])
+echo.
+echo ^        # Apply perspective projection (simulate depth)
+echo ^        x_2d, y_2d = project_3d_to_2d(x, y, p["z"])
+echo.
+echo ^        # Update trail
+echo ^        p["trail"].append((x_2d, y_2d))
+echo ^        if len(p["trail"]) > TRAIL_LENGTH:
+echo ^            p["trail"].pop(0)
+echo.
+echo ^        # Draw the trail with fading effect
+echo ^        for i, (tx, ty) in enumerate(p["trail"]):
+echo ^            opacity = i / TRAIL_LENGTH  ^# Fading effect
+echo ^            color = hsl_to_rgb((p["hue_shift"] + i * 10) % 360, 1, 0.5)
+echo ^            pygame.draw.circle(screen, color, (tx, ty), p["size"])
+echo.
+echo pygame.display.flip()
+echo clock.tick(FPS)  ^# Control the frame rate
+echo.
+echo pygame.quit()
+)
+
+:: Run the Python script (you need to have Python installed and in your PATH)
+echo Running the Python script...
+python galaxy_script.py
+
+:: End of script
+pause
