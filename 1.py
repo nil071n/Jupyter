@@ -1,63 +1,42 @@
-import socket
-import pyautogui
+from flask import Flask, Response
 import numpy as np
 import cv2
-import time
 from PIL import ImageGrab
+import time
 
-# Self-viewing configuration
-HOST = '127.0.0.1'  # Always connect to itself (localhost)
-PORT = 12345        # Port number (make sure it's not in use by other applications)
+# Create Flask app
+app = Flask(__name__)
 
-# Create a socket to communicate with itself
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind((HOST, PORT))
-server_socket.listen(1)
-
-print(f"Server started on {HOST}:{PORT}...")
-
-# Accept the connection (from itself)
-client_socket, client_address = server_socket.accept()
-print(f"Connection established with {client_address}")
-
-def send_screen():
-    """Capture the screen and send it continuously to the client (itself)"""
+def capture_screen():
+    """Capture the screen continuously and send it to the client."""
     while True:
-        screen = np.array(ImageGrab.grab())  # Capture the screen
-        _, encoded_img = cv2.imencode('.jpg', screen)  # Encode the image
+        # Capture the screen using ImageGrab
+        screen = np.array(ImageGrab.grab())
+        
+        # Convert the screen capture to a byte array using OpenCV
+        _, encoded_img = cv2.imencode('.jpg', screen)  # JPEG encode
         img_data = encoded_img.tobytes()  # Convert to bytes
         
-        # Send the length of the image data first
-        client_socket.sendall(len(img_data).to_bytes(4, byteorder='big'))
-        client_socket.sendall(img_data)  # Send the image data
-        time.sleep(0.1)  # Limit the capture rate for better performance
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + img_data + b'\r\n\r\n')
+        time.sleep(0.1)  # Sleep to reduce load and control frame rate
 
-def display_screen():
-    """Display the captured screen continuously"""
-    while True:
-        # First, receive the length of the image data
-        img_len = int.from_bytes(client_socket.recv(4), byteorder='big')
-        img_data = b""
-        
-        # Receive the image data
-        while len(img_data) < img_len:
-            img_data += client_socket.recv(4096)
-        
-        # Decode the image data
-        img = np.frombuffer(img_data, dtype=np.uint8)
-        img = cv2.imdecode(img, cv2.IMREAD_COLOR)
-        
-        # Display the received screen
-        cv2.imshow('Self-View Screen', img)
-        
-        # Exit the display window when 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    
-    client_socket.close()
+@app.route('/video_feed')
+def video_feed():
+    """Route that serves the screen image as a video feed"""
+    return Response(capture_screen(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-# Start sending the screen to itself in one thread
-send_screen()
+@app.route('/')
+def index():
+    """Serve the main page that displays the video feed"""
+    return '''
+        <html>
+            <body>
+                <h1>Live Screen Feed</h1>
+                <img src="/video_feed" />
+            </body>
+        </html>
+    '''
 
-# Start displaying the screen in another thread
-display_screen()
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000, threaded=True)
