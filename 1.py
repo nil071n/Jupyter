@@ -49,4 +49,4 @@ def video_feed():
 
 if __name__ == '__main__':
     # Run the app on all interfaces so other devices can access it
-    app.run(host='0.0.0.0', port=5000, threaded=True)
+    app.run(host='10.17.57.124', port=5000, threaded=True)
